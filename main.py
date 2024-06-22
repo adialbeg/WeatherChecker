@@ -1,7 +1,5 @@
 import streamlit as st
 import requests
-import pandas as pd
-import json
 import datetime as dt
 
 def temp_convert(f):
@@ -28,13 +26,30 @@ div[data-baseweb="base-input"] {
 st.markdown(input_style, unsafe_allow_html=True)
 
 API_key = '0730b6f9f2d9fcc976b98ba4a611ddae'
-weather_data: object = requests.get(f"http://api.openweathermap.org/data/2.5/weather?q={title}&units=imperial&appid={API_key}").json()
+weather_data = requests.get(f"http://api.openweathermap.org/data/2.5/weather?q={title}&units=imperial&appid={API_key}").json()
 
 if st.sidebar.button('Check the weather'):
-    st.title("The weather in " + title.capitalize() + ' is: ')
-    description = weather_data['weather'][0]['description']
 
-    if 'clear' in description:
+    if weather_data.get('cod') != '404':
+        st.title("The weather in " + title.capitalize() + ' is: ')
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric('Temperature', f"{temp_convert(weather_data['main']['temp']):.0f}°C")
+            st.metric('Feels like', f"{temp_convert(weather_data['main']['feels_like']):.0f}°C")
+        with col2:
+            st.metric('Min temperature', f"{temp_convert(weather_data['main']['temp_min']):.0f}°C")
+            st.metric('Max temperature', f"{temp_convert(weather_data['main']['temp_max']):.0f}°C")
+        with col3:
+            st.metric('Sunrise', f"{dt.datetime.utcfromtimestamp(weather_data['sys']['sunrise'] + weather_data['timezone']).strftime('%H:%M')}")
+            st.metric('Sunset', f"{dt.datetime.utcfromtimestamp(weather_data['sys']['sunset'] + weather_data['timezone']).strftime('%H:%M')}")
+        description = weather_data['weather'][0]['description']
+        st.write(f"**The weather is {description}**")
+
+    else:
+        st.title('City not found !')
+
+    if description == 'clear sky':
         background_image = """
         <style>
         [data-testid="stAppViewContainer"] > .main {
@@ -62,7 +77,7 @@ if st.sidebar.button('Check the weather'):
 
         st.markdown(background_image, unsafe_allow_html=True)
 
-    elif description == 'moderate rain' or description == 'rain' or description == 'moderate rain' or description == 'light rain' or description == 'light intensity shower rain':
+    elif description == 'moderate rain' or description == 'rain' or description == 'shower rain' or description == 'light rain' or description == 'light intensity shower rain' or description == 'heavy intensity rain':
         background_image = """
                         <style>
                         [data-testid="stAppViewContainer"] > .main {
@@ -118,23 +133,25 @@ if st.sidebar.button('Check the weather'):
 
         st.markdown(background_image, unsafe_allow_html=True)
 
-
-    if weather_data.get('cod') != 404:
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric('Temperature', f"{temp_convert(weather_data['main']['temp']):.0f}°C")
-            st.metric('Feels like', f"{temp_convert(weather_data['main']['feels_like']):.0f}°C")
-        with col2:
-            st.metric('Min temperature', f"{temp_convert(weather_data['main']['temp_min']):.0f}°C")
-            st.metric('Max temperature', f"{temp_convert(weather_data['main']['temp_max']):.0f}°C")
-        with col3:
-            st.metric('Sunrise', f"{dt.datetime.utcfromtimestamp(weather_data['sys']['sunrise'] + weather_data['timezone']).strftime('%H:%M')}")
-            st.metric('Sunset', f"{dt.datetime.utcfromtimestamp(weather_data['sys']['sunset'] + weather_data['timezone']).strftime('%H:%M')}")
-
-        st.write('The weather is ' + description)
-
     else:
-        st.error('City not found')
+        background_image = """
+                            <style>
+                            [data-testid="stAppViewContainer"] > .main {
+                                background-image: url("https://img.freepik.com/premium-vector/vector-design-error-icon-style_822882-94310.jpg?w=740");
+                                background-size: 100vw 100vh;
+                                background-position: center;  
+                                background-repeat: no-repeat;
+                                }
+                                </style>
+                                """
+
+        st.markdown(background_image, unsafe_allow_html=True)
+
+
+
+
+
+
 
 
 
